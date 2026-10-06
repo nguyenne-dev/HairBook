@@ -62,14 +62,21 @@ export const userRepository = {
     return user;
   },
 
-  async findAll() {
-    const users = await prisma.user.findMany();
+  async findAll(isActive?: boolean) {
+    const users = await prisma.user.findMany({
+      where: {
+        ...(isActive !== undefined && { isActive }),
+      },
+    });
     return users;
   },
 
-  async findByRole(role: "ADMIN" | "HAIRDRESSER" | "CUSTOMER") {
+  async findByRole(role: "ADMIN" | "HAIRDRESSER" | "CUSTOMER", isActive?: boolean) {
     const users = await prisma.user.findMany({
-      where: { role },
+      where: {
+        role,
+        ...(isActive !== undefined && { isActive }),
+      },
     });
     return users;
   },

@@ -6,15 +6,16 @@ const prisma = new PrismaClient();
 async function main() {
     console.log("🌱 Đang bắt đầu seed dữ liệu mẫu...");
 
-    // 1. Xóa dữ liệu cũ để tránh trùng lặp
+    // 1. Xóa dữ liệu cũ theo thứ tự quan hệ
+    await prisma.service.deleteMany();
     await prisma.user.deleteMany();
-    console.log("🧹 Đã làm sạch bảng users.");
+    console.log("🧹 Đã làm sạch dữ liệu cũ.");
 
     // Mật khẩu chung cho tất cả tài khoản test: "123456"
     const passwordHash = await bcrypt.hash("123456", 10);
 
     // 2. Tạo 1 ADMIN
-    await prisma.user.create({
+    const admin = await prisma.user.create({
         data: {
             username: "admin",
             email: "admin@bookinghair.com",
@@ -24,6 +25,7 @@ async function main() {
             address: "Hà Nội",
             avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
             role: Role.ADMIN,
+            isActive: true,
         },
     });
     console.log("✅ Đã tạo 1 ADMIN: admin (123456)");
@@ -43,6 +45,7 @@ async function main() {
                 ...c,
                 passwordHash,
                 role: Role.CUSTOMER,
+                isActive: true,
             },
         });
     }
@@ -50,86 +53,16 @@ async function main() {
 
     // 4. Tạo 10 HAIRDRESSERS (Thợ làm tóc chuyên nghiệp)
     const hairdressersData = [
-        {
-            username: "stylist_nam",
-            email: "nam.stylist@bookinghair.com",
-            phoneNumber: "0981000001",
-            gender: "NAM",
-            address: "Quận 1, TP. Hồ Chí Minh",
-            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-        },
-        {
-            username: "stylist_tuan",
-            email: "tuan.stylist@bookinghair.com",
-            phoneNumber: "0981000002",
-            gender: "NAM",
-            address: "Ba Đình, Hà Nội",
-            avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-        },
-        {
-            username: "stylist_linh",
-            email: "linh.stylist@bookinghair.com",
-            phoneNumber: "0981000003",
-            gender: "NỮ",
-            address: "Hoàn Kiếm, Hà Nội",
-            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
-        },
-        {
-            username: "stylist_hoang",
-            email: "hoang.stylist@bookinghair.com",
-            phoneNumber: "0981000004",
-            gender: "NAM",
-            address: "Cầu Giấy, Hà Nội",
-            avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150",
-        },
-        {
-            username: "stylist_mai",
-            email: "mai.stylist@bookinghair.com",
-            phoneNumber: "0981000005",
-            gender: "NỮ",
-            address: "Quận 3, TP. Hồ Chí Minh",
-            avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
-        },
-        {
-            username: "stylist_phong",
-            email: "phong.stylist@bookinghair.com",
-            phoneNumber: "0981000006",
-            gender: "NAM",
-            address: "Hải Châu, Đà Nẵng",
-            avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150",
-        },
-        {
-            username: "stylist_an",
-            email: "an.stylist@bookinghair.com",
-            phoneNumber: "0981000007",
-            gender: "NAM",
-            address: "Tây Hồ, Hà Nội",
-            avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150",
-        },
-        {
-            username: "stylist_huong",
-            email: "huong.stylist@bookinghair.com",
-            phoneNumber: "0981000008",
-            gender: "NỮ",
-            address: "Bình Thạnh, TP. Hồ Chí Minh",
-            avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150",
-        },
-        {
-            username: "stylist_dung",
-            email: "dung.stylist@bookinghair.com",
-            phoneNumber: "0981000009",
-            gender: "NAM",
-            address: "Đống Đa, Hà Nội",
-            avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150",
-        },
-        {
-            username: "stylist_thao",
-            email: "thao.stylist@bookinghair.com",
-            phoneNumber: "0981000010",
-            gender: "NỮ",
-            address: "Thanh Khê, Đà Nẵng",
-            avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150",
-        },
+        { username: "stylist_nam", email: "nam.stylist@bookinghair.com", phoneNumber: "0981000001", gender: "NAM", address: "Quận 1, TP. Hồ Chí Minh" },
+        { username: "stylist_tuan", email: "tuan.stylist@bookinghair.com", phoneNumber: "0981000002", gender: "NAM", address: "Ba Đình, Hà Nội" },
+        { username: "stylist_linh", email: "linh.stylist@bookinghair.com", phoneNumber: "0981000003", gender: "NỮ", address: "Hoàn Kiếm, Hà Nội" },
+        { username: "stylist_hoang", email: "hoang.stylist@bookinghair.com", phoneNumber: "0981000004", gender: "NAM", address: "Cầu Giấy, Hà Nội" },
+        { username: "stylist_mai", email: "mai.stylist@bookinghair.com", phoneNumber: "0981000005", gender: "NỮ", address: "Quận 3, TP. Hồ Chí Minh" },
+        { username: "stylist_phong", email: "phong.stylist@bookinghair.com", phoneNumber: "0981000006", gender: "NAM", address: "Hải Châu, Đà Nẵng" },
+        { username: "stylist_an", email: "an.stylist@bookinghair.com", phoneNumber: "0981000007", gender: "NAM", address: "Tây Hồ, Hà Nội" },
+        { username: "stylist_huong", email: "huong.stylist@bookinghair.com", phoneNumber: "0981000008", gender: "NỮ", address: "Bình Thạnh, TP. Hồ Chí Minh" },
+        { username: "stylist_dung", email: "dung.stylist@bookinghair.com", phoneNumber: "0981000009", gender: "NAM", address: "Đống Đa, Hà Nội" },
+        { username: "stylist_thao", email: "thao.stylist@bookinghair.com", phoneNumber: "0981000010", gender: "NỮ", address: "Thanh Khê, Đà Nẵng" },
     ];
 
     for (const h of hairdressersData) {
@@ -138,10 +71,31 @@ async function main() {
                 ...h,
                 passwordHash,
                 role: Role.HAIRDRESSER,
+                isActive: true,
             },
         });
     }
-    console.log("✅ Đã tạo 10 HAIRDRESSER (mật khẩu: 123456)");
+    console.log("✅ Đã tạo 10 HAIRDRESSER");
+
+    // 5. Tạo các DỊCH VỤ TÓC mẫu
+    const servicesData = [
+        { name: "Cắt tóc tạo kiểu Undercut", description: "Cắt tạo kiểu và sấy form chuẩn", price: 100000, duration: 30 },
+        { name: "Cắt tóc nữ Layer", description: "Cắt tỉa layer thời thượng chuẩn Hàn", price: 150000, duration: 45 },
+        { name: "Uốn xoăn sóng lơi", description: "Uốn xoăn tự nhiên giữ nếp 6 tháng", price: 350000, duration: 90 },
+        { name: "Nhuộm tóc thời trang", description: "Nhuộm màu tôn da kèm phục hồi nano", price: 400000, duration: 90 },
+        { name: "Gội đầu dưỡng sinh thảo dược", description: "Gội đầu kèm massage cổ vai gáy", price: 80000, duration: 45 },
+        { name: "Phục hồi tóc Collagen", description: "Hấp dầu phục hồi tóc hư tổn chuyên sâu", price: 250000, duration: 60 },
+    ];
+
+    for (const s of servicesData) {
+        await prisma.service.create({
+            data: {
+                ...s,
+                createdById: admin.id,
+            },
+        });
+    }
+    console.log("✅ Đã tạo 6 DỊCH VỤ TÓC mẫu.");
 
     console.log("🎉 Seed dữ liệu thành công hoàn tất!");
 }

@@ -7,12 +7,13 @@ export type CreateUserData = {
     address?: string;
     avatar?: string;
     role?: "ADMIN" | "HAIRDRESSER" | "CUSTOMER";
-}
+    isActive?: boolean;
+};
 
 export type LoginUserData = {
     username: string;
     password: string;
-}
+};
 
 export type UpdateUserData = {
     password?: string;
@@ -21,4 +22,5 @@ export type UpdateUserData = {
     address?: string;
     avatar?: string;
     role?: "ADMIN" | "HAIRDRESSER" | "CUSTOMER";
-}
+    isActive?: boolean;
+};

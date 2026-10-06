@@ -11,11 +11,11 @@ export const authenticate = async (
     try {
         let token: string | undefined;
 
-        // 1. Kiểm tra Token từ Header Authorization (Bearer <token>)
+        // Kiểm tra Token từ Header Authorization (Bearer <token>)
         if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
             token = req.headers.authorization.split(" ")[1];
         } 
-        // 2. Hoặc kiểm tra Token từ Cookie (httpOnly)
+        // Hoặc kiểm tra Token từ Cookie (httpOnly)
         else if (req.cookies && req.cookies.token) {
             token = req.cookies.token;
         }
@@ -24,16 +24,20 @@ export const authenticate = async (
             throw new AppError("Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục", 401);
         }
 
-        // 3. Xác thực tính hợp lệ của token
+        // Xác thực tính hợp lệ của token
         const decoded = verifyToken(token);
 
-        // 4. Kiểm tra user trong database xem tài khoản còn tồn tại không
+        // Kiểm tra user trong database xem tài khoản còn tồn tại không
         const currentUser = await userRepository.findById(decoded.id);
         if (!currentUser) {
             throw new AppError("Tài khoản người dùng này không còn tồn tại", 401);
         }
 
-        // 5. Gắn thông tin người dùng vào request để các controller phía sau sử dụng
+        if (!currentUser.isActive) {
+            throw new AppError("Tài khoản của bạn đã bị vô hiệu hóa hoặc tạm khóa", 403);
+        }
+
+        // Gắn thông tin người dùng vào request để các controller phía sau sử dụng
         req.user = {
             id: currentUser.id,
             role: currentUser.role,
@@ -87,7 +91,7 @@ export const optionalAuthenticate = async (
 
         const decoded = verifyToken(token);
         const currentUser = await userRepository.findById(decoded.id);
-        if (currentUser) {
+        if (currentUser && currentUser.isActive) {
             req.user = {
                 id: currentUser.id,
                 role: currentUser.role,

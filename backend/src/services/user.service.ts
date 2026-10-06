@@ -23,7 +23,7 @@ export const userService = {
                 gender: data.gender,
                 address: data.address,
                 avatar: data.avatar,
-                role: data.role,
+                role: "CUSTOMER" as const,
             }
             const dbResult = await userRepository.create(user);
             const { passwordHash: pwh, ...result } = dbResult;
@@ -40,6 +40,10 @@ export const userService = {
 
             const isPasswordValid = await bcrypt.compare(data.password, user.passwordHash);
             if (!isPasswordValid) throw new AppError("Tên tài khoản hoặc mật khẩu không chính xác", 400);
+
+            if (!user.isActive) {
+                throw new AppError("Tài khoản của bạn đã bị vô hiệu hóa hoặc tạm khóa", 403);
+            }
 
             const { passwordHash, ...result } = user;
 
@@ -64,9 +68,12 @@ export const userService = {
             const user = await userRepository.findById(id);
             if (!user) throw new AppError("Tài khoản không tồn tại", 404);
 
-            // Khách hàng thông thường không được tự ý sửa đổi role
+            // Khách hàng thông thường không được tự ý sửa đổi role hoặc tự mở khóa tài khoản
             if (data.role && currentUser.role !== "ADMIN") {
                 delete data.role;
+            }
+            if (data.isActive !== undefined && currentUser.role !== "ADMIN") {
+                delete data.isActive;
             }
 
             if (data.password) {
@@ -114,21 +121,39 @@ export const userService = {
         }
     },
 
-    // Lấy danh sách thợ tóc (dành cho khách hàng xem và đặt lịch)
+    // Lấy danh sách thợ tóc (chỉ lấy thợ đang hoạt động để khách đặt lịch)
     async getHairdressers() {
         try {
-            const hairdressers = await userRepository.findByRole("HAIRDRESSER");
+            const hairdressers = await userRepository.findByRole("HAIRDRESSER", true);
             return hairdressers.map(({ passwordHash, ...safeUser }) => safeUser);
         } catch (error) {
             throw error;
         }
     },
 
-    // Lấy tất cả user trong hệ thống (dành riêng cho ADMIN)
-    async getAllUser() {
+    // Lấy tất cả user trong hệ thống (dành riêng cho ADMIN, có thể lọc isActive)
+    async getAllUser(isActive?: boolean) {
         try {
-            const users = await userRepository.findAll();
+            const users = await userRepository.findAll(isActive);
             return users.map(({ passwordHash, ...safeUser }) => safeUser);
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // Bật / Tắt trạng thái hoạt động tài khoản (Chỉ ADMIN)
+    async toggleUserStatus(id: string, currentAdminId: string) {
+        try {
+            if (id === currentAdminId) {
+                throw new AppError("Bạn không thể tự vô hiệu hóa tài khoản của chính mình", 400);
+            }
+
+            const user = await userRepository.findById(id);
+            if (!user) throw new AppError("Tài khoản không tồn tại", 404);
+
+            const updated = await userRepository.update(id, { isActive: !user.isActive });
+            const { passwordHash, ...result } = updated;
+            return result;
         } catch (error) {
             throw error;
         }

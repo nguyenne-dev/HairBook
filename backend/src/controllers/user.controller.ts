@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { userService } from "../services/user.service";
 
 export const userController = {
-    // 1. Đăng ký tài khoản
+    // Đăng ký tài khoản
     async register(req: Request, res: Response, next: NextFunction) {
         try {
             const user = await userService.registerUser(req.body);
@@ -16,7 +16,7 @@ export const userController = {
         }
     },
 
-    // 2. Đăng nhập
+    // Đăng nhập
     async login(req: Request, res: Response, next: NextFunction) {
         try {
             const { user, token } = await userService.loginUser(req.body);
@@ -42,7 +42,7 @@ export const userController = {
         }
     },
 
-    // 3. Đăng xuất (xóa cookie)
+    // Đăng xuất (xóa cookie)
     async logout(req: Request, res: Response) {
         res.clearCookie("token");
         return res.status(200).json({
@@ -51,7 +51,7 @@ export const userController = {
         });
     },
 
-    // 4. Lấy danh sách thợ tóc (Khách hàng xem để chọn thợ đặt lịch)
+    // Lấy danh sách thợ tóc (Khách hàng xem để chọn thợ đặt lịch)
     async getHairdressers(req: Request, res: Response, next: NextFunction) {
         try {
             const hairdressers = await userService.getHairdressers();
@@ -64,7 +64,7 @@ export const userController = {
         }
     },
 
-    // 5. Lấy thông tin cá nhân của chính mình (Profile của người đang đăng nhập)
+    // Lấy thông tin cá nhân của chính mình (Profile của người đang đăng nhập)
     async getMe(req: Request, res: Response, next: NextFunction) {
         try {
             const me = await userService.getMe(req.user!.id);
@@ -77,10 +77,14 @@ export const userController = {
         }
     },
 
-    // 6. Lấy tất cả user (Chỉ ADMIN)
+    // Lấy tất cả user (Chỉ ADMIN, có thể lọc isActive)
     async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const users = await userService.getAllUser();
+            const isActive =
+                req.query.isActive !== undefined
+                    ? req.query.isActive === "true"
+                    : undefined;
+            const users = await userService.getAllUser(isActive);
             return res.status(200).json({
                 success: true,
                 data: users,
@@ -90,7 +94,7 @@ export const userController = {
         }
     },
 
-    // 7. Lấy chi tiết user theo ID (Kiểm tra quyền: Khách xem chính mình hoặc thợ tóc)
+    // Lấy chi tiết user theo ID (Kiểm tra quyền: Khách xem chính mình hoặc thợ tóc)
     async getById(req: Request, res: Response, next: NextFunction) {
         try {
             const id = req.params.id as string;
@@ -105,7 +109,7 @@ export const userController = {
         }
     },
 
-    // 8. Cập nhật user (Chỉ chính mình hoặc ADMIN)
+    // Cập nhật user (Chỉ chính mình hoặc ADMIN)
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             const id = req.params.id as string;
@@ -121,7 +125,7 @@ export const userController = {
         }
     },
 
-    // 9. Xóa user (Chỉ chính mình hoặc ADMIN)
+    // Xóa user (Chỉ chính mình hoặc ADMIN)
     async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const id = req.params.id as string;
@@ -131,6 +135,22 @@ export const userController = {
                 success: true,
                 message: "Xóa tài khoản thành công",
                 data: deletedUser,
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Bật / Tắt trạng thái hoạt động tài khoản (Chỉ ADMIN)
+    async toggleStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const currentAdminId = req.user!.id;
+            const updatedUser = await userService.toggleUserStatus(id, currentAdminId);
+            return res.status(200).json({
+                success: true,
+                message: `Tài khoản đã được ${updatedUser.isActive ? "kích hoạt" : "vô hiệu hóa"}`,
+                data: updatedUser,
             });
         } catch (error) {
             next(error);
