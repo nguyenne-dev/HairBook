@@ -31,6 +31,8 @@ model User {
   updatedServices Service[] @relation("ServiceUpdatedBy")
   deletedServices Service[] @relation("ServiceDeletedBy")
 
+  workingSchedules WorkingSchedule[] @relation("HairdresserSchedules")
+
   @@map("users")
 }
 
@@ -56,4 +58,22 @@ model Service {
   deletedBy     User?     @relation("ServiceDeletedBy", fields: [deletedById], references: [id])
 
   @@map("services")
+}
+
+model WorkingSchedule {
+  id             String   @id @default(uuid())
+  hairdresserId  String
+  hairdresser    User     @relation("HairdresserSchedules", fields: [hairdresserId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int      // 0 = Chủ nhật, 1 = Thứ 2, 2 = Thứ 3, ..., 6 = Thứ 7
+  startTime      String   @default("08:00") // Định dạng "HH:mm" (ví dụ 08:00)
+  endTime        String   @default("20:00") // Định dạng "HH:mm" (ví dụ 20:00)
+  breakStartTime String?  @default("12:00") // Giờ bắt đầu nghỉ trưa "HH:mm"
+  breakEndTime   String?  @default("14:00") // Giờ kết thúc nghỉ trưa "HH:mm"
+  isDayOff       Boolean  @default(false)   // true = ngày nghỉ của thợ
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([hairdresserId, dayOfWeek])
+  @@map("working_schedules")
 }

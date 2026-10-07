@@ -7,6 +7,7 @@ async function main() {
     console.log("🌱 Đang bắt đầu seed dữ liệu mẫu...");
 
     // 1. Xóa dữ liệu cũ theo thứ tự quan hệ
+    await prisma.workingSchedule.deleteMany();
     await prisma.service.deleteMany();
     await prisma.user.deleteMany();
     console.log("🧹 Đã làm sạch dữ liệu cũ.");
@@ -51,7 +52,7 @@ async function main() {
     }
     console.log("✅ Đã tạo 5 CUSTOMER (mật khẩu: 123456)");
 
-    // 4. Tạo 10 HAIRDRESSERS (Thợ làm tóc chuyên nghiệp)
+    // 4. Tạo 10 HAIRDRESSERS (Thợ làm tóc chuyên nghiệp) kèm lịch làm việc
     const hairdressersData = [
         { username: "stylist_nam", email: "nam.stylist@bookinghair.com", phoneNumber: "0981000001", gender: "NAM", address: "Quận 1, TP. Hồ Chí Minh" },
         { username: "stylist_tuan", email: "tuan.stylist@bookinghair.com", phoneNumber: "0981000002", gender: "NAM", address: "Ba Đình, Hà Nội" },
@@ -66,7 +67,7 @@ async function main() {
     ];
 
     for (const h of hairdressersData) {
-        await prisma.user.create({
+        const hairdresser = await prisma.user.create({
             data: {
                 ...h,
                 passwordHash,
@@ -74,8 +75,23 @@ async function main() {
                 isActive: true,
             },
         });
+
+        // Tạo sẵn lịch làm việc từ Thứ 2 đến Thứ 7 (08:00 - 20:00), Chủ nhật nghỉ
+        const schedules = [];
+        for (let day = 0; day <= 6; day++) {
+            schedules.push({
+                hairdresserId: hairdresser.id,
+                dayOfWeek: day,
+                startTime: "08:00",
+                endTime: "20:00",
+                breakStartTime: "12:00",
+                breakEndTime: "14:00",
+                isDayOff: day === 0, // 0 = Chủ nhật nghỉ
+            });
+        }
+        await prisma.workingSchedule.createMany({ data: schedules });
     }
-    console.log("✅ Đã tạo 10 HAIRDRESSER");
+    console.log("✅ Đã tạo 10 HAIRDRESSER kèm lịch làm việc (T2 - T7 từ 08:00 - 20:00, nghỉ trưa 12:00 - 14:00, CN nghỉ)");
 
     // 5. Tạo các DỊCH VỤ TÓC mẫu
     const servicesData = [
