@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.route";
+import serviceRoutes from "./routes/service.route";
 import { errorHandler } from "./middlewares/errorHandler";
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 // Khai báo các Routes
 app.use("/api/users", userRoutes);
+app.use("/api/services", serviceRoutes);
 
 // Middleware xử lý lỗi tập trung
 app.use(errorHandler);

@@ -61,3 +61,44 @@ export const authorize = (...roles: ("ADMIN" | "HAIRDRESSER" | "CUSTOMER")[]) =>
         next();
     };
 };
+
+/**
+ * Middleware xác thực tùy chọn (Không bắt buộc đăng nhập)
+ * Nếu có token hợp lệ -> gắn req.user
+ * Nếu không có token -> tiếp tục với tư cách khách vãng lai (req.user = undefined)
+ */
+export const optionalAuthenticate = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        let token: string | undefined;
+
+        if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+            token = req.headers.authorization.split(" ")[1];
+        } else if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        }
+
+        if (!token) {
+            return next();
+        }
+
+        const decoded = verifyToken(token);
+        const currentUser = await userRepository.findById(decoded.id);
+        if (currentUser) {
+            req.user = {
+                id: currentUser.id,
+                role: currentUser.role,
+                username: currentUser.username,
+                email: currentUser.email,
+            };
+        }
+
+        next();
+    } catch {
+        // Token lỗi hoặc hết hạn -> vẫn cho tiếp tục như khách vãng lai
+        next();
+    }
+};
